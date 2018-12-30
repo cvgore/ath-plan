@@ -156,7 +156,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   Future<Map<String, List<TimetableEntry>>> _getTimetable() async {
-    var data = await http.get('http://192.168.1.100:8080?group=${groupData.id}');
+    var data = await http.get('https://ath-plan.liquard.tk/?group=${groupData.id}');
     var json = jsonDecode(data.body);
     return Timetable.fromJson(json).entries;
   }

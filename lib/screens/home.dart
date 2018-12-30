@@ -96,7 +96,7 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<List<Group>> _getIndexes() async {
-    var data = await http.get('http://192.168.1.100:8080');
+    var data = await http.get('https://ath-plan.liquard.tk/');
     var json = jsonDecode(data.body);
     _groups = List();
     for (var i = 0; i < json.length; ++i) {

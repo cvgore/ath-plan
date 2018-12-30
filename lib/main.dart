@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'dart:ui';
 
 import 'screens/home.dart';
 
 void main() {
   runApp(MaterialApp(
-    home: HomeScreen()
+    theme: ThemeData.dark(),
+    home: HomeScreen(),
+    locale: window.locale
   ));
 }
