@@ -22,13 +22,14 @@ class _HomeScreenState extends State<HomeScreen> {
 
   TextEditingController _filterController;
 
-  Future<List<Group>> _favouritesFuture;
-  List<Group> _favourites = List();
+  Future<List<Group>> _bookmarksFuture;
+  List<Group> _bookmarks = List();
 
-  Future<List<Group>> _getFavs() async {
+  Future<List<Group>> _getBookmarks() async {
+    await _groupsFuture;
     final prefs = await SharedPreferences.getInstance();
-    List<String> data = prefs.getStringList('favourites') ?? List<String>();
-    _favourites = List();
+    List<String> data = prefs.getStringList('bookmarks');
+    _bookmarks = List();
     if (data.length == 0) {
       return List();
     }
@@ -37,15 +38,16 @@ class _HomeScreenState extends State<HomeScreen> {
       int grpId = int.parse(fav);
       int grpPos = _groups.indexWhere((g) => g.id == grpId);
       if (grpPos == -1) {
+        debugPrint('Group not found: $grpId');
         continue;
       }
 
-      _favourites.add(_groups[grpPos]);
+      _bookmarks.add(_groups[grpPos]);
     }
-    return _favourites;
+    return _bookmarks;
   }
 
-  ListTile _getFavsTile(Group data, int index) {
+  ListTile _getBookmarksTile(Group data, int index) {
     return ListTile(
       leading: Icon(Icons.bookmark),
       title: Text(data.name),
@@ -58,19 +60,19 @@ class _HomeScreenState extends State<HomeScreen> {
         });
       },
       onLongPress: () {
-        _favourites.removeAt(index);
-        _saveFavs();
+        _bookmarks.removeAt(index);
+        _saveBookmarks();
       }
     );
   }
 
-  Future<void> _saveFavs() async {
+  Future<void> _saveBookmarks() async {
     final prefs = await SharedPreferences.getInstance();
-    prefs.setStringList('favourites',
-        _favourites.map((g) => g.id.toString()).toList()
+    prefs.setStringList('bookmarks',
+        _bookmarks.map((g) => g.id.toString()).toList()
     );
     setState(() {
-      _favouritesFuture = _getFavs();
+      _bookmarksFuture = _getBookmarks();
     });
   }
 
@@ -78,7 +80,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _groupsFuture = _getIndexes();
-    _favouritesFuture = _getFavs();
+    _bookmarksFuture = _getBookmarks();
     _filterController = TextEditingController();
     _filterController.addListener(() {
       if (_filterController.text.isEmpty) {
@@ -168,18 +170,18 @@ class _HomeScreenState extends State<HomeScreen> {
                             ));
                           },
                           onLongPress: () {
-                            if (_favourites.indexOf(data[index]) == -1) {
-                              _favourites.add(data[index]);
-                              _saveFavs();
+                            if (_bookmarks.indexOf(data[index]) == -1) {
+                              _bookmarks.add(data[index]);
+                              _saveBookmarks();
                               Scaffold.of(context).showSnackBar(
                                   SnackBar(
-                                      content: Text('Dodano do ulubionych - ${data[index].name}')
+                                      content: Text('Dodano do zakładek - ${data[index].name}')
                                   )
                               );
                             } else {
                               Scaffold.of(context).showSnackBar(
                                 SnackBar(
-                                    content: Text('${data[index].name} - już dodałeś do ulubionych')
+                                    content: Text('${data[index].name} - już dodałeś do zakładek')
                                 )
                               );
                             }
@@ -203,17 +205,19 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       // Set the nav drawer
       drawer: FutureBuilder<List<Group>>(
-        future: _favouritesFuture,
+        future: _bookmarksFuture,
         builder: (context, snapshot) {
+          Widget _getDrawerHeader() => DrawerHeader(child: Text('ATH Plan'));
+
           if (snapshot.hasData) {
             if (snapshot.data.length == 0) {
               return Drawer(
                 child: ListView(
                   children: <Widget>[
-                    DrawerHeader(child: Text('ATH Plan')),
+                    _getDrawerHeader(),
                     ListTile(
-                      title: Text('Brak ulubionych'),
-                      subtitle: Text('Przytrzymaj na danej grupie, aby dodać'),
+                      title: Text('Brak zakładek'),
+                      subtitle: Text('Przytrzymaj na danej grupie, aby dodać do zakładek'),
                     )
                   ],
                 )
@@ -224,9 +228,9 @@ class _HomeScreenState extends State<HomeScreen> {
                 itemCount: snapshot.data.length + 1,
                 itemBuilder: (BuildContext _, int index) {
                   if (index == 0) {
-                    return DrawerHeader(child: Text('ATH Plan'));
+                    return _getDrawerHeader();
                   }
-                  return _getFavsTile(snapshot.data[index - 1], index - 1);
+                  return _getBookmarksTile(snapshot.data[index - 1], index - 1);
                 }
               ),
             );
@@ -234,7 +238,7 @@ class _HomeScreenState extends State<HomeScreen> {
             return Drawer(
               child: ListView(
                 children: <Widget>[
-                  DrawerHeader(child: Text('ATH Plan'))
+                  _getDrawerHeader()
                 ],
               )
             );
@@ -242,7 +246,7 @@ class _HomeScreenState extends State<HomeScreen> {
           return Drawer(
             child: ListView(
               children: <Widget>[
-                DrawerHeader(child: Text('ATH Plan')),
+                _getDrawerHeader(),
                 Center(child: CircularProgressIndicator())
               ],
             )
