@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:core';
 
-import '../group.dart';
-import '../timetable.dart';
+import '../../group.dart';
+import '../../timetable.dart';
 
 String _addMinsToDate(String date, int mins) {
   var newDate = DateTime.parse('1970-01-01 $date:00').add(Duration(minutes: mins));
@@ -42,7 +42,7 @@ IconData _getIconByExerciseType(String type) {
     case 'LECTURE':
       return Icons.hearing;
     case 'EXERCISE':
-      return Icons.playlist_add_check;
+      return Icons.edit;
     case 'LABORATORY':
       return Icons.desktop_windows;
     case 'PROJECT':
@@ -82,7 +82,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   ];
   int _selectedWeek = 1;
   Future<Map<String, List<TimetableEntry>>> _timetable;
-
+  int _weekDayIdx;
   List<String> _dateKeys = List();
 
   _TimetableScreenState(this.groupData) : super();
@@ -165,7 +165,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
   Widget build(BuildContext context) {
     _dateKeys.clear();
     var week = 7 * (-_selectedWeek + 1);
-    var
     _weekDayIdx = DateTime.now().add(Duration(days: week)).weekday - 1;
     print(_selectedWeek);
     var firstDayOfWeek = DateTime.now().subtract(Duration(days: week + DateTime.now().weekday - 1));
@@ -290,8 +289,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
   Widget _iconsHelp() {
     ListTile _getListTile(String type) {
       return ListTile(
-          leading: Icon(_getIconByExerciseType(type)),
-          title: Text(_getExerciseTypeName(type)),
+        leading: Icon(_getIconByExerciseType(type)),
+        title: Text(_getExerciseTypeName(type)),
       );
     }
 
@@ -299,14 +298,14 @@ class _TimetableScreenState extends State<TimetableScreen> {
       ListTile(
         title: Text('Objaśnienia piktogramów', style: Theme.of(context).textTheme.body2),
       ),
-      _getListTile(ExerciseTypes.CONSERVATOIRE),
       _getListTile(ExerciseTypes.EXERCISE),
+      _getListTile(ExerciseTypes.CONSERVATOIRE),
       _getListTile(ExerciseTypes.LABORATORY),
       _getListTile(ExerciseTypes.LANG_COURSE),
-      _getListTile(ExerciseTypes.LECTURE),
+      _getListTile(ExerciseTypes.WORK),
       _getListTile(ExerciseTypes.PRACTICAL_LANG),
       _getListTile(ExerciseTypes.PROJECT),
-      _getListTile(ExerciseTypes.WORK),
+      _getListTile(ExerciseTypes.LECTURE),
     ]);
   }
 
@@ -317,8 +316,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   String _getWeekText(int i) {
-    var wk = DateTime.now().add(Duration(days: 7 * i));
-    var firstDay = wk.subtract(Duration(days: 6));
+    var firstDay = DateTime.now();
+    firstDay = firstDay.add(Duration(days: 7 * i - firstDay.weekday + 1));
+    var wk = firstDay.add(Duration(days: 6));
     return '${firstDay.day.toString().padLeft(2, '0')}.${firstDay.month.toString().padLeft(2, '0')} - ${wk.day.toString().padLeft(2, '0')}.${wk.month.toString().padLeft(2, '0')}';
   }
 }
@@ -343,5 +343,5 @@ String _getExerciseTypeName(String type) {
     case 'WR':
       return 'praca';
   }
-  return 'Nie wiem kurwa co to jest';
+  return null;
 }

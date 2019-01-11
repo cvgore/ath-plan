@@ -1,0 +1,42 @@
+{
+  "project_info": {
+    "project_number": "876712421397",
+    "firebase_url": "https://ath-plan.firebaseio.com",
+    "project_id": "ath-plan",
+    "storage_bucket": "ath-plan.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:876712421397:android:3211a4fbba022727",
+        "android_client_info": {
+          "package_name": "com.cvgore.athplan"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "876712421397-kvdg5ohpf7sc4c0lqnnkaa3n2f3pk5ot.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDnTTJr_g29InyO2Vsits_aYUsExMvYlQ8"
+        }
+      ],
+      "services": {
+        "analytics_service": {
+          "status": 1
+        },
+        "appinvite_service": {
+          "status": 1,
+          "other_platform_oauth_client": []
+        },
+        "ads_service": {
+          "status": 2
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

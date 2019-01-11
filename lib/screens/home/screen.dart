@@ -5,8 +5,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:url_launcher/url_launcher.dart';
 
-import 'timetable.dart';
-import '../group.dart';
+import '../timetable/screen.dart';
+import '../../group.dart';
 
 class HomeScreen extends StatefulWidget {
   @override

@@ -1,4 +1,4 @@
-package com.cvgore.testflutter;
+package com.cvgore.athplan;
 
 import android.os.Bundle;
 import io.flutter.app.FlutterActivity;
