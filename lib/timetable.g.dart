@@ -71,7 +71,6 @@ class _$TimetableTimespanJsonMapWrapper extends $JsonMapWrapper {
   }
 }
 
-// ignore: unused_element
 Timetable _$TimetableFromJson(Map<String, dynamic> json) {
   return Timetable(
       entries: (json['entries'] as Map<String, dynamic>).map((k, e) => MapEntry(

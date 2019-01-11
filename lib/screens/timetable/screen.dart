@@ -8,22 +8,10 @@ import '../../timetable.dart';
 
 String _addMinsToDate(String date, int mins) {
   var newDate = DateTime.parse('1970-01-01 $date:00').add(Duration(minutes: mins));
-  return '${newDate.hour.toString().padLeft(2, '0')}:${newDate.minute.toString().padLeft(2, '0')}';
+  return '${_getPaddedZero(newDate.hour)}:${_getPaddedZero(newDate.minute)}';
 }
 
-//enum ExerciseType {
-  //CONSERVATOIRE = "konw",
-  //LECTURE = "wyk",
-  //EXERCISE = "ćw",
-  //LABORATORY = "lab",
-  //PROJECT = "proj",
-  //LANG_COURSE = "lek",
-  //PRACTICAL_LANG = "pnj",
-  //WR = "wr",
-  //WORK = "work"
-//}
-
-class ExerciseTypes {
+class _ExerciseTypes {
   static const String CONSERVATOIRE = "CONSERVATOIRE";
   static const String LECTURE = "LECTURE";
   static const String EXERCISE = "EXERCISE";
@@ -32,30 +20,66 @@ class ExerciseTypes {
   static const String LANG_COURSE = "LANG_COURSE";
   static const String PRACTICAL_LANG = "PRACTICAL_LANG";
   static const String WORK = "WORK";
-  static const String WR = "WR";
-}
+  static const String RESERVED_LECTURE = "RESERVED_LECTURE";
+  static const List<String> list = [
+    _ExerciseTypes.EXERCISE,
+    _ExerciseTypes.CONSERVATOIRE,
+    _ExerciseTypes.LABORATORY,
+    _ExerciseTypes.LANG_COURSE,
+    _ExerciseTypes.WORK,
+    _ExerciseTypes.PRACTICAL_LANG,
+    _ExerciseTypes.PROJECT,
+    _ExerciseTypes.LECTURE,
+    _ExerciseTypes.RESERVED_LECTURE,
+  ];
 
-IconData _getIconByExerciseType(String type) {
-  switch(type) {
-    case 'CONSERVATOIRE':
-      return Icons.forum;
-    case 'LECTURE':
-      return Icons.hearing;
-    case 'EXERCISE':
-      return Icons.edit;
-    case 'LABORATORY':
-      return Icons.desktop_windows;
-    case 'PROJECT':
-      return Icons.insert_drive_file;
-    case 'LANG_COURSE':
-      return Icons.translate;
-    case 'PRACTICAL_LANG':
-      return Icons.mic;
-    case 'WORK':
-    case 'WR':
-      return Icons.work;
+  static IconData getIconByType(String type) {
+    switch(type) {
+      case _ExerciseTypes.CONSERVATOIRE:
+        return Icons.forum;
+      case _ExerciseTypes.LECTURE:
+        return Icons.hearing;
+      case _ExerciseTypes.EXERCISE:
+        return Icons.edit;
+      case _ExerciseTypes.LABORATORY:
+        return Icons.desktop_windows;
+      case _ExerciseTypes.PROJECT:
+        return Icons.insert_drive_file;
+      case _ExerciseTypes.LANG_COURSE:
+        return Icons.translate;
+      case _ExerciseTypes.PRACTICAL_LANG:
+        return Icons.mic;
+      case _ExerciseTypes.WORK:
+        return Icons.work;
+      case _ExerciseTypes.RESERVED_LECTURE:
+        return Icons.book;
+    }
+    return Icons.error_outline;
   }
-  return Icons.error_outline;
+
+  static String getLocalizedNameByType(String type) {
+    switch(type) {
+      case _ExerciseTypes.CONSERVATOIRE:
+        return 'konwersatorium';
+      case _ExerciseTypes.LECTURE:
+        return 'wykład';
+      case _ExerciseTypes.EXERCISE:
+        return 'ćwiczenia';
+      case _ExerciseTypes.LABORATORY:
+        return 'laboratorium';
+      case _ExerciseTypes.PROJECT:
+        return 'projekt';
+      case _ExerciseTypes.LANG_COURSE:
+        return 'lektorat';
+      case _ExerciseTypes.PRACTICAL_LANG:
+        return 'praktyczna nauka języka';
+      case _ExerciseTypes.WORK:
+        return 'praca';
+      case _ExerciseTypes.RESERVED_LECTURE:
+        return 'wykład rezerwowany';
+    }
+    return null;
+  }
 }
 
 class TimetableScreen extends StatefulWidget {
@@ -130,7 +154,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
 ////                    Scaffold.of(itemContext).hideCurrentSnackBar();
 ////                    Scaffold.of(itemContext).showSnackBar(SnackBar(content: Text('Typ zajęć: ${_getExerciseTypeName(timetable.type)}')));
 //                  },
-                leading: Icon(_getIconByExerciseType(timetable.type),
+                leading: Icon(_ExerciseTypes.getIconByType(timetable.type),
                 ),
                 onLongPress: () {
                   assert(() {
@@ -166,13 +190,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
     _dateKeys.clear();
     var week = 7 * (-_selectedWeek + 1);
     _weekDayIdx = DateTime.now().add(Duration(days: week)).weekday - 1;
-    print(_selectedWeek);
     var firstDayOfWeek = DateTime.now().subtract(Duration(days: week + DateTime.now().weekday - 1));
     for(int i = 0; i < 7; i++) {
       var curr = firstDayOfWeek.add(Duration(days: i));
-      _dateKeys.add('${curr.year}-${curr.month.toString().padLeft(2, '0')}-${curr.day.toString().padLeft(2, '0')}');
+      _dateKeys.add('${curr.year}-${_getPaddedZero(curr.month)}-${_getPaddedZero(curr.day)}');
     }
-    print(_dateKeys);
     return DefaultTabController(
       initialIndex: _weekDayIdx,
       length: _weekDaysTabs.length,
@@ -289,24 +311,19 @@ class _TimetableScreenState extends State<TimetableScreen> {
   Widget _iconsHelp() {
     ListTile _getListTile(String type) {
       return ListTile(
-        leading: Icon(_getIconByExerciseType(type)),
-        title: Text(_getExerciseTypeName(type)),
+        leading: Icon(_ExerciseTypes.getIconByType(type)),
+        title: Text(_ExerciseTypes.getLocalizedNameByType(type)),
       );
     }
 
-    return ListView(children: <Widget>[
-      ListTile(
+    ListTile _getHeader() {
+      return ListTile(
         title: Text('Objaśnienia piktogramów', style: Theme.of(context).textTheme.body2),
-      ),
-      _getListTile(ExerciseTypes.EXERCISE),
-      _getListTile(ExerciseTypes.CONSERVATOIRE),
-      _getListTile(ExerciseTypes.LABORATORY),
-      _getListTile(ExerciseTypes.LANG_COURSE),
-      _getListTile(ExerciseTypes.WORK),
-      _getListTile(ExerciseTypes.PRACTICAL_LANG),
-      _getListTile(ExerciseTypes.PROJECT),
-      _getListTile(ExerciseTypes.LECTURE),
-    ]);
+      );
+    }
+    List<ListTile> helpData = _ExerciseTypes.list.map((t) => _getListTile(t)).toList();
+    helpData.insert(0, _getHeader());
+    return ListView(children: helpData);
   }
 
   void _changeWeek(int value) {
@@ -316,32 +333,17 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   String _getWeekText(int i) {
-    var firstDay = DateTime.now();
-    firstDay = firstDay.add(Duration(days: 7 * i - firstDay.weekday + 1));
-    var wk = firstDay.add(Duration(days: 6));
-    return '${firstDay.day.toString().padLeft(2, '0')}.${firstDay.month.toString().padLeft(2, '0')} - ${wk.day.toString().padLeft(2, '0')}.${wk.month.toString().padLeft(2, '0')}';
+    var wkStart = DateTime.now();
+    wkStart = wkStart.add(Duration(days: 7 * i - wkStart.weekday + 1));
+    var wkEnd = wkStart.add(Duration(days: 6));
+    return '${_getPrettyPrintDayMonth(wkStart)} - ${_getPrettyPrintDayMonth(wkEnd)}';
+  }
+  
+  String _getPrettyPrintDayMonth(DateTime dt) {
+    return '${_getPaddedZero(dt.day)}.${_getPaddedZero(dt.month)}';
   }
 }
 
-String _getExerciseTypeName(String type) {
-  switch(type) {
-    case 'CONSERVATOIRE':
-      return 'konwersatorium';
-    case 'LECTURE':
-      return 'wykład';
-    case 'EXERCISE':
-      return 'ćwiczenia';
-    case 'LABORATORY':
-      return 'laboratorium';
-    case 'PROJECT':
-      return 'projekt';
-    case 'LANG_COURSE':
-      return 'lektorat';
-    case 'PRACTICAL_LANG':
-      return 'praktyczna nauka języka';
-    case 'WORK':
-    case 'WR':
-      return 'praca';
-  }
-  return null;
+String _getPaddedZero(int day) {
+  return day.toString().padLeft(2, '0');
 }
