@@ -9,6 +9,7 @@ import '../timetable/screen.dart';
 import '../../group.dart';
 
 class HomeScreen extends StatefulWidget {
+
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
@@ -16,11 +17,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   Future<List<Group>> _groupsFuture;
   List<Group> _groups = List();
-  String _filterBy = '';
-
-  bool _isSearchVisible = false;
-
-  TextEditingController _filterController;
 
   Future<List<Group>> _bookmarksFuture;
   List<Group> _bookmarks = List();
@@ -30,19 +26,17 @@ class _HomeScreenState extends State<HomeScreen> {
     final prefs = await SharedPreferences.getInstance();
     List<String> data = prefs.getStringList('bookmarks');
     _bookmarks = List();
-    if (data.length == 0) {
-      return List();
-    }
+    if (data.length > 0) {
+      for (String fav in data) {
+        int grpId = int.parse(fav);
+        int grpPos = _groups.indexWhere((g) => g.id == grpId);
+        if (grpPos == -1) {
+          debugPrint('Group not found: $grpId');
+          continue;
+        }
 
-    for(String fav in data) {
-      int grpId = int.parse(fav);
-      int grpPos = _groups.indexWhere((g) => g.id == grpId);
-      if (grpPos == -1) {
-        debugPrint('Group not found: $grpId');
-        continue;
+        _bookmarks.add(_groups[grpPos]);
       }
-
-      _bookmarks.add(_groups[grpPos]);
     }
     return _bookmarks;
   }
@@ -81,18 +75,6 @@ class _HomeScreenState extends State<HomeScreen> {
     super.initState();
     _groupsFuture = _getIndexes();
     _bookmarksFuture = _getBookmarks();
-    _filterController = TextEditingController();
-    _filterController.addListener(() {
-      if (_filterController.text.isEmpty) {
-        setState(() {
-          _filterBy = "";
-        });
-      } else {
-        setState(() {
-          _filterBy = _filterController.text;
-        });
-      }
-    });
   }
 
   Future<List<Group>> _getIndexes() async {
@@ -119,14 +101,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: _isSearchVisible ? TextField(
-          style: Theme.of(context).textTheme.title,
-          controller: _filterController,
-          autofocus: true,
-          decoration: InputDecoration(
-            hintText: 'Wpisz szukaną frazę...'
-          ),
-        ) : Text('ATH Plan'),
+        title: Text('ATH Plan'),
         actions: <Widget>[
           IconButton(
             icon: Icon(Icons.info),
@@ -153,9 +128,6 @@ class _HomeScreenState extends State<HomeScreen> {
         builder: (context, snapshot) {
           if (snapshot.hasData || snapshot.hasError) {
             List<Group> data = List.from(snapshot.data);
-            if (_isSearchVisible && _filterBy.length > 0) {
-              data.retainWhere((g) => g.name.toLowerCase().contains(_filterBy.toLowerCase()));
-            }
             return Container(
                 child: RefreshIndicator(
                     child: ListView.builder(
@@ -251,16 +223,12 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             )
           );
-        },
-      ), //_getNavDrawer(context),
-      floatingActionButton: FloatingActionButton(
-        child: Icon(_isSearchVisible ? Icons.close : Icons.search),
-        onPressed: () {
-          setState(() {
-            _isSearchVisible = !_isSearchVisible;
-          });
-        },
+        }, //_getNavDrawer(context),
       ),
     );
   }
+}
+
+Future<void> updateIndexes() {
+  //
 }
