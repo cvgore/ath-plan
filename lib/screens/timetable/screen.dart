@@ -5,81 +5,11 @@ import 'dart:core';
 
 import '../../group.dart';
 import '../../timetable.dart';
+import '../../exercise_types.dart';
 
 String _addMinsToDate(String date, int mins) {
   var newDate = DateTime.parse('1970-01-01 $date:00').add(Duration(minutes: mins));
   return '${_getPaddedZero(newDate.hour)}:${_getPaddedZero(newDate.minute)}';
-}
-
-class _ExerciseTypes {
-  static const String CONSERVATOIRE = "CONSERVATOIRE";
-  static const String LECTURE = "LECTURE";
-  static const String EXERCISE = "EXERCISE";
-  static const String LABORATORY = "LABORATORY";
-  static const String PROJECT = "PROJECT";
-  static const String LANG_COURSE = "LANG_COURSE";
-  static const String PRACTICAL_LANG = "PRACTICAL_LANG";
-  static const String WORK = "WORK";
-  static const String RESERVED_LECTURE = "RESERVED_LECTURE";
-  static const List<String> list = [
-    _ExerciseTypes.EXERCISE,
-    _ExerciseTypes.CONSERVATOIRE,
-    _ExerciseTypes.LABORATORY,
-    _ExerciseTypes.LANG_COURSE,
-    _ExerciseTypes.WORK,
-    _ExerciseTypes.PRACTICAL_LANG,
-    _ExerciseTypes.PROJECT,
-    _ExerciseTypes.LECTURE,
-    _ExerciseTypes.RESERVED_LECTURE,
-  ];
-
-  static IconData getIconByType(String type) {
-    switch(type) {
-      case _ExerciseTypes.CONSERVATOIRE:
-        return Icons.forum;
-      case _ExerciseTypes.LECTURE:
-        return Icons.hearing;
-      case _ExerciseTypes.EXERCISE:
-        return Icons.edit;
-      case _ExerciseTypes.LABORATORY:
-        return Icons.desktop_windows;
-      case _ExerciseTypes.PROJECT:
-        return Icons.insert_drive_file;
-      case _ExerciseTypes.LANG_COURSE:
-        return Icons.translate;
-      case _ExerciseTypes.PRACTICAL_LANG:
-        return Icons.mic;
-      case _ExerciseTypes.WORK:
-        return Icons.work;
-      case _ExerciseTypes.RESERVED_LECTURE:
-        return Icons.book;
-    }
-    return Icons.error_outline;
-  }
-
-  static String getLocalizedNameByType(String type) {
-    switch(type) {
-      case _ExerciseTypes.CONSERVATOIRE:
-        return 'konwersatorium';
-      case _ExerciseTypes.LECTURE:
-        return 'wykład';
-      case _ExerciseTypes.EXERCISE:
-        return 'ćwiczenia';
-      case _ExerciseTypes.LABORATORY:
-        return 'laboratorium';
-      case _ExerciseTypes.PROJECT:
-        return 'projekt';
-      case _ExerciseTypes.LANG_COURSE:
-        return 'lektorat';
-      case _ExerciseTypes.PRACTICAL_LANG:
-        return 'praktyczna nauka języka';
-      case _ExerciseTypes.WORK:
-        return 'praca';
-      case _ExerciseTypes.RESERVED_LECTURE:
-        return 'wykład rezerwowany';
-    }
-    return null;
-  }
 }
 
 class TimetableScreen extends StatefulWidget {
@@ -104,14 +34,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
     Tab(text: 'Sob'),
     Tab(text: 'Nie')
   ];
+
   int _selectedWeek = 1;
   Future<Map<String, List<TimetableEntry>>> _timetable;
   int _weekDayIdx;
   List<String> _dateKeys = List();
 
   _TimetableScreenState(this.groupData) : super();
-
-
 
   @override
   void initState() {
@@ -132,7 +61,19 @@ class _TimetableScreenState extends State<TimetableScreen> {
               var timetable = subData[idx];
               return ListTile(
                 title: Text('${timetable.slug}'),
-                subtitle: Text('Sala: ${timetable.room}'),
+                subtitle: Row(
+                  children: <Widget>[
+                    Padding(
+                      child: Text(timetable.room, style: Theme.of(context).textTheme.body2),
+                      padding: EdgeInsets.only(right: 4.0),
+                    ),
+                    Text('\u2022'),
+                    Padding(
+                      child: Text('${ExerciseTypes.getShortLocalNameByType(timetable.type)}'),
+                      padding: EdgeInsets.only(left: 4.0),
+                    ),
+                  ],
+                ),
                 trailing: Column(
                   children: <Widget>[
                     Text(timetable.timespan.start, style: Theme.of(context).textTheme.title),
@@ -154,7 +95,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
 ////                    Scaffold.of(itemContext).hideCurrentSnackBar();
 ////                    Scaffold.of(itemContext).showSnackBar(SnackBar(content: Text('Typ zajęć: ${_getExerciseTypeName(timetable.type)}')));
 //                  },
-                leading: Icon(_ExerciseTypes.getIconByType(timetable.type),
+                leading: Icon(ExerciseTypes.getIconByType(timetable.type),
                 ),
                 onLongPress: () {
                   assert(() {
@@ -180,9 +121,29 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   Future<Map<String, List<TimetableEntry>>> _getTimetable() async {
+    void _showDlg() {
+      showDialog(context: context, builder: (dlgContext) {
+        return AlertDialog(title: Text('Nie można pobrać planu'), content: Text('Wystąpił błąd podczas pobierania planu!'), actions: <Widget>[
+          FlatButton(child: Text('Ok'), onPressed: () {
+            Navigator.of(context).pop();
+          })
+        ]);
+      }, barrierDismissible: false);
+    }
     var data = await http.get('https://ath-plan.liquard.tk/?group=${groupData.id}');
-    var json = jsonDecode(data.body);
-    return Timetable.fromJson(json).entries;
+    if (data.statusCode != 200) {
+      _showDlg();
+      return null;
+    }
+    try {
+      var json = jsonDecode(data.body);
+      var entries = Timetable.fromJson(json).entries;
+      return entries;
+    } on FormatException catch(ex) {
+      debugPrint(ex.toString());
+      _showDlg();
+      return null;
+    }
   }
 
   @override
@@ -219,30 +180,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
                 );
               },
             )
-//            PopupMenuButton<int>(
-//              icon: Icon(Icons.more_vert),
-//              itemBuilder: (BuildContext _) => <PopupMenuEntry<int>>[
-//                PopupMenuItem(
-//                  child: Text('Zmień tydzień'),
-//                  value: 1,
-//                ),
-//                PopupMenuItem(
-//                  child: Text('Objaśnienia'),
-//                  value: 2,
-//                )
-//              ],
-//              onSelected: (int option) {
-//                switch(option) {
-//                  case 2: {
-//                    showModalBottomSheet(
-//                      context: context,
-//                      builder: (BuildContext builder) {
-//                        return _iconsHelp();
-//                      });
-//                  }
-//                }
-//              },
-//            )
           ],
           bottom: TabBar(
             tabs: _weekDaysTabs,
@@ -252,17 +189,17 @@ class _TimetableScreenState extends State<TimetableScreen> {
             future: _timetable,
             builder: (futureContext, snapshot) {
               if (snapshot.hasError) {
-//                Scaffold.of(context).showSnackBar(
-//                  SnackBar(
-//                      content: Text('Nieudane pobranie planu')
-//                  )
-//                );
-//                Navigator.of(context).pop();
-              //throw snapshot.error;
                 return Container(
-                  child: Center(
-                    child: Text('Nie można pobrać planu - ${snapshot.error}'),
-                  ),
+                  child: RichText(
+                    text: TextSpan(
+                      text: 'Wystąpił błąd podczas pobierania planu!',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                      children: [
+                        TextSpan(text: snapshot.connectionState.toString()),
+                        TextSpan(text: snapshot.error.toString()),
+                      ]
+                    )
+                  )
                 );
               } else if (snapshot.hasData) {
                 if (snapshot.data.length == 0) {
@@ -311,8 +248,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
   Widget _iconsHelp() {
     ListTile _getListTile(String type) {
       return ListTile(
-        leading: Icon(_ExerciseTypes.getIconByType(type)),
-        title: Text(_ExerciseTypes.getLocalizedNameByType(type)),
+        leading: Icon(ExerciseTypes.getIconByType(type)),
+        title: Text(ExerciseTypes.getLocalizedNameByType(type)),
       );
     }
 
@@ -321,7 +258,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         title: Text('Objaśnienia piktogramów', style: Theme.of(context).textTheme.body2),
       );
     }
-    List<ListTile> helpData = _ExerciseTypes.list.map((t) => _getListTile(t)).toList();
+    List<ListTile> helpData = ExerciseTypes.list.map((t) => _getListTile(t)).toList();
     helpData.insert(0, _getHeader());
     return ListView(children: helpData);
   }
