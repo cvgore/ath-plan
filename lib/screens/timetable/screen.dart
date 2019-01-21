@@ -68,6 +68,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         return AlertDialog(title: Text('Nie można pobrać planu'), content: Text('Wystąpił błąd podczas pobierania planu!'), actions: <Widget>[
           FlatButton(child: Text('Ok'), onPressed: () {
             Navigator.of(context).pop();
+            Navigator.of(context).pop();
           })
         ]);
       }, barrierDismissible: false);
