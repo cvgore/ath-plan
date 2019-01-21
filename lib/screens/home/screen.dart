@@ -1,11 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'groups_screen.dart';
 import 'info_screen.dart';
 import 'my_groups_screen.dart';
+import '../../fcm.dart';
+import '../../common.dart';
+
+bool get consentAgreed {
+  return HomeScreen._consentAgreed;
+}
+
+String get fcmToken {
+  return HomeScreen._fcmToken ?? "";
+}
+
+const String GDPR_CONSENT_PREFS_KEY = 'gdpr_consent';
 
 class HomeScreen extends StatefulWidget {
+  static bool _consentAgreed = false;
+  static String _fcmToken;
 
   @override
   _HomeScreenState createState() => _HomeScreenState();
@@ -27,6 +42,12 @@ class _HomeScreenState extends State<HomeScreen> {
     } else {
       throw 'Could not launch $url';
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    tryGetFcmToken();
   }
 
   @override
@@ -69,6 +90,94 @@ class _HomeScreenState extends State<HomeScreen> {
           });
         },
       ),
+    );
+  }
+
+  Future<void> tryGetFcmToken() async {
+    var prefs = await SharedPreferences.getInstance();
+    var consent = prefs.getBool(GDPR_CONSENT_PREFS_KEY);
+    if (consent == null) {
+      debugPrint('Consent agreement required to FCM work, nor no notifications!');
+      HomeScreen._consentAgreed = await showDialog<bool>(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) {
+          return AlertDialog(
+            title: Text('Zgoda RODO'),
+            content: RichText(
+                text: TextSpan(
+                    text: 'Zgodnie z RODO musisz zostać poinformowany o przetwarzaniu danych.',
+                    children: <TextSpan>[
+                      TextSpan(text: 'Abyś mógł otrzymywać powiadomienia na swoje urządzenie, '
+                          'musisz wyrazić zgodę na przetwarzanie danych osobowych (co za kuriozum).'),
+                      TextSpan(text: 'W celu dostarczenia powiadomienia zostaje użyty twój identyfikator instancji aplikacji.'),
+                      TextSpan(text: 'Swoją zgodę możesz zawsze cofnąć w Ustawieniach.'),
+                    ]
+                )
+            ),
+            actions: <Widget>[
+              FlatButton(
+                child: Text('Akceptuję'),
+                onPressed: () => Navigator.of(context).pop(true),
+              ),
+              FlatButton(
+                child: Text('Odrzucam'),
+                onPressed: () => Navigator.of(context).pop(false),
+              )
+            ],
+          );
+        }
+      );
+      prefs.setBool(GDPR_CONSENT_PREFS_KEY, consentAgreed);
+    } else {
+      HomeScreen._consentAgreed = consent;
+    }
+    if (consentAgreed) {
+      handleNotifications();
+    }
+  }
+
+  Future<void> handleNotifications() async {
+    g_firebaseMessaging.onTokenRefresh.listen((token) {
+      HomeScreen._fcmToken = token;
+      debugPrint('FCM token: $fcmToken');
+    });
+    g_firebaseMessaging.setAutoInitEnabled(true);
+    g_firebaseMessaging.configure(
+      onMessage: (fcmMsg) {
+        if (fcmMsg.containsKey('notification')) {
+          Map<String, dynamic> notification = fcmMsg['notification'];
+          _showNotificationDlg(notification);
+        }
+        else if (fcmMsg.containsKey('data')) {
+          Map<String, dynamic> data = fcmMsg['data'];
+          if (data.containsKey('updateIndexes')) {
+            //updateIndexes();
+          }
+        }
+      }
+    );
+  }
+
+  void _showNotificationDlg(Map<String, dynamic> data) {
+    Scaffold.of(context).showSnackBar(
+      SnackBar(content: Text(data['body']))
+    );
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Text.rich(TextSpan(text: data['body'])),
+          title: Text('Info: ${truncateIfExceeds(data['title'], 20)}'),
+          actions: <Widget>[
+            FlatButton(
+              child: Text('Ok'),
+              onPressed: () => Navigator.of(context).pop(),
+            )
+          ],
+        );
+      }
     );
   }
 }

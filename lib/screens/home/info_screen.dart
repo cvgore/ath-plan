@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 class InfoSubScreen extends StatefulWidget {
+  InfoSubScreen({Key key}): super(key: key);
   @override createState() => _InfoSubScreenState();
 }
 

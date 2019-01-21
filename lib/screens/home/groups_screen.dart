@@ -6,6 +6,7 @@ import '../../group.dart';
 import '../timetable/screen.dart';
 
 class GroupsSubScreen extends StatefulWidget {
+  GroupsSubScreen({Key key}): super(key: key);
   @override createState() => _GroupsSubScreenState();
 }
 

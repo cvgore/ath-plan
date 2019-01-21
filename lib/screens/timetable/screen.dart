@@ -6,15 +6,11 @@ import 'dart:core';
 import '../../group.dart';
 import '../../timetable.dart';
 import '../../exercise_types.dart';
-
-String _addMinsToDate(String date, int mins) {
-  var newDate = DateTime.parse('1970-01-01 $date:00').add(Duration(minutes: mins));
-  return '${_getPaddedZero(newDate.hour)}:${_getPaddedZero(newDate.minute)}';
-}
+import 'entry_tile.dart';
+import '../../common.dart';
 
 class TimetableScreen extends StatefulWidget {
   static const String routeName = "/timetable";
-
   final Group groupData;
 
   TimetableScreen({Key key, @required this.groupData}) : super(key: key);
@@ -56,64 +52,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
         temp.add(_noData());
       } else {
         temp.add(ListView.builder(
-            itemCount: subData.length,
-            itemBuilder: (BuildContext itemContext, int idx) {
-              var timetable = subData[idx];
-              return ListTile(
-                title: Text('${timetable.slug}'),
-                subtitle: Row(
-                  children: <Widget>[
-                    Padding(
-                      child: Text(timetable.room, style: Theme.of(context).textTheme.body2),
-                      padding: EdgeInsets.only(right: 4.0),
-                    ),
-                    Text('\u2022'),
-                    Padding(
-                      child: Text('${ExerciseTypes.getShortLocalNameByType(timetable.type)}'),
-                      padding: EdgeInsets.only(left: 4.0),
-                    ),
-                  ],
-                ),
-                trailing: Column(
-                  children: <Widget>[
-                    Text(timetable.timespan.start, style: Theme.of(context).textTheme.title),
-                    Text(_addMinsToDate(timetable.timespan.start, timetable.timespan.length)),
-                  ],
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                ),
-//                leading: IconButton(
-//                  icon: ),
-//                  onPressed: () {
-//                    showModalBottomSheet(
-//                        context: itemContext,
-//                        builder: (BuildContext context) {
-//                          return Container(
-//                            child: _iconsHelp(),
-//                          );
-//                        }
-//                      );
-////                    Scaffold.of(itemContext).hideCurrentSnackBar();
-////                    Scaffold.of(itemContext).showSnackBar(SnackBar(content: Text('Typ zajęć: ${_getExerciseTypeName(timetable.type)}')));
-//                  },
-                leading: Icon(ExerciseTypes.getIconByType(timetable.type),
-                ),
-                onLongPress: () {
-                  assert(() {
-                    showModalBottomSheet(
-                        context: context,
-                        builder: (BuildContext builder) {
-                          return Container(
-                            child: Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Text(timetable.toJson().toString()),
-                            ),
-                          );
-                        });
-                    return true;
-                  }());
-                },
-              );
-            }
+          itemCount: subData.length,
+          itemBuilder: (BuildContext itemContext, int idx) {
+            return EntryTile(subData[idx]);
+          }
         ));
       }
     }
@@ -154,7 +96,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     var firstDayOfWeek = DateTime.now().subtract(Duration(days: week + DateTime.now().weekday - 1));
     for(int i = 0; i < 7; i++) {
       var curr = firstDayOfWeek.add(Duration(days: i));
-      _dateKeys.add('${curr.year}-${_getPaddedZero(curr.month)}-${_getPaddedZero(curr.day)}');
+      _dateKeys.add('${curr.year}-${getPaddedZero(curr.month)}-${getPaddedZero(curr.day)}');
     }
     return DefaultTabController(
       initialIndex: _weekDayIdx,
@@ -232,9 +174,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Text('\u{1F914}',
-                style: TextStyle(fontSize: 128.0)
-            ),
+            Image.asset("assets/images/1337.png", width: 192.0, repeat: ImageRepeat.noRepeat, fit: BoxFit.contain),
             Padding(
                 padding: EdgeInsets.only(top: 16.0),
                 child: Text('Brak zajęć?')
@@ -277,10 +217,6 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
   
   String _getPrettyPrintDayMonth(DateTime dt) {
-    return '${_getPaddedZero(dt.day)}.${_getPaddedZero(dt.month)}';
+    return '${getPaddedZero(dt.day)}.${getPaddedZero(dt.month)}';
   }
-}
-
-String _getPaddedZero(int day) {
-  return day.toString().padLeft(2, '0');
 }
