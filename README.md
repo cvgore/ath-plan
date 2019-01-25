@@ -1,16 +1,19 @@
-# test_flutter
+# ATH Plan
 
-A new Flutter application.
+Mobile app for ATHs' students, where they can view current timetable.
 
-## Getting Started
+It uses data from available at https://plany.ath.bielsko.pl indirecly.
 
-This project is a starting point for a Flutter application.
+Heavily relies on [ats4-to-json](https://github.com/cvgore/ats4-to-json).
 
-A few resources to get you started if this is your first Flutter project:
+## Android
 
-- [Lab: Write your first Flutter app](https://flutter.io/docs/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://flutter.io/docs/cookbook)
+App is freely available for Android.
 
-For help getting started with Flutter, view our 
-[online documentation](https://flutter.io/docs), which offers tutorials, 
-samples, guidance on mobile development, and a full API reference.
+## iOS
+
+There are no current plans for iOS release.
+
+# License
+
+Licensed under GPLv3.0
