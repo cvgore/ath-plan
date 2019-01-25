@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'dart:core';
@@ -17,6 +18,11 @@ class TimetableScreen extends StatefulWidget {
 
   @override
   _TimetableScreenState createState() => _TimetableScreenState(this.groupData);
+}
+
+enum _TimetableDropdownMenu {
+  ADD_REMOVE_FROM_MY_GROUPS,
+  SHOW_PICTOGRAM_LEGEND,
 }
 
 class _TimetableScreenState extends State<TimetableScreen> {
@@ -46,47 +52,48 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
   List<Widget> _getTabViewChildren(Map<String, List<TimetableEntry>> data) {
     var temp = List<Widget>();
-    for(int i = 0; i < _weekDaysTabs.length; i++) {
+    for (int i = 0; i < _weekDaysTabs.length; i++) {
       var subData = data[_dateKeys[i]] ?? List();
       if (subData.length == 0) {
         temp.add(_noData());
       } else {
         temp.add(ListView.builder(
-          itemCount: subData.length,
-          itemBuilder: (BuildContext itemContext, int idx) {
-            return EntryTile(subData[idx]);
-          }
-        ));
+            itemCount: subData.length,
+            itemBuilder: (BuildContext itemContext, int idx) {
+              return EntryTile(subData[idx]);
+            }));
       }
     }
     return temp;
   }
 
+  void _showErrorWhileFetching() {
+    showDialog(
+        context: context,
+        builder: (dlgContext) {
+          return AlertDialog(
+              title: Text('Nie można pobrać planu'),
+              content: Text('Wystąpił błąd podczas pobierania planu!'),
+              actions: <Widget>[
+                FlatButton(
+                    child: Text('Ok'),
+                    onPressed: () {
+                      Navigator.of(context)..pop()..pop();
+                    })
+              ]);
+        },
+        barrierDismissible: false);
+  }
+
   Future<Map<String, List<TimetableEntry>>> _getTimetable() async {
-    void _showDlg() {
-      showDialog(context: context, builder: (dlgContext) {
-        return AlertDialog(title: Text('Nie można pobrać planu'), content: Text('Wystąpił błąd podczas pobierania planu!'), actions: <Widget>[
-          FlatButton(child: Text('Ok'), onPressed: () {
-            Navigator.of(context).pop();
-            Navigator.of(context).pop();
-          })
-        ]);
-      }, barrierDismissible: false);
-    }
-    var data = await http.get('https://ath-plan.liquard.tk/?group=${groupData.id}');
+    var data =
+        await http.get('https://ath-plan.liquard.tk/?group=${groupData.id}');
     if (data.statusCode != 200) {
-      _showDlg();
+      //_showErrorWhileFetching();
       return null;
     }
-    try {
-      var json = jsonDecode(data.body);
-      var entries = Timetable.fromJson(json).entries;
-      return entries;
-    } on FormatException catch(ex) {
-      debugPrint(ex.toString());
-      _showDlg();
-      return null;
-    }
+
+    return await compute(_parseTimetable, data.body);
   }
 
   @override
@@ -94,79 +101,79 @@ class _TimetableScreenState extends State<TimetableScreen> {
     _dateKeys.clear();
     var week = 7 * (-_selectedWeek + 1);
     _weekDayIdx = DateTime.now().add(Duration(days: week)).weekday - 1;
-    var firstDayOfWeek = DateTime.now().subtract(Duration(days: week + DateTime.now().weekday - 1));
-    for(int i = 0; i < 7; i++) {
+    var firstDayOfWeek = DateTime.now()
+        .subtract(Duration(days: week + DateTime.now().weekday - 1));
+    for (int i = 0; i < 7; i++) {
       var curr = firstDayOfWeek.add(Duration(days: i));
-      _dateKeys.add('${curr.year}-${getPaddedZero(curr.month)}-${getPaddedZero(curr.day)}');
+      _dateKeys.add(
+          '${curr.year}-${getPaddedZero(curr.month)}-${getPaddedZero(curr.day)}');
     }
     return DefaultTabController(
-      initialIndex: _weekDayIdx,
-      length: _weekDaysTabs.length,
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(groupData.name),
-          leading: IconButton(
-            icon: BackButtonIcon(),
-            onPressed: () {
-              Navigator.of(context).pop();
-            },
-          ),
-          actions: <Widget>[
-            IconButton(
-              icon: Icon(Icons.info),
+        initialIndex: _weekDayIdx,
+        length: _weekDaysTabs.length,
+        child: Scaffold(
+          appBar: AppBar(
+            title: Text(groupData.name),
+            leading: IconButton(
+              icon: BackButtonIcon(),
               onPressed: () {
-                showModalBottomSheet(
-                  context: context,
-                  builder: (BuildContext builder) {
-                    return _iconsHelp();
-                  }
-                );
+                Navigator.of(context).pop();
               },
-            )
-          ],
-          bottom: TabBar(
-            tabs: _weekDaysTabs,
+            ),
+            actions: <Widget>[
+              PopupMenuButton<_TimetableDropdownMenu>(
+                itemBuilder: _makePopupMenuItems,
+                onSelected: (item) {
+                  switch(item) {
+                    case _TimetableDropdownMenu.SHOW_PICTOGRAM_LEGEND:
+                      return _showPictogramLegend(context);
+                    case _TimetableDropdownMenu.ADD_REMOVE_FROM_MY_GROUPS:
+                      return null;
+                  }
+                },
+              )
+            ],
+            bottom: TabBar(
+              tabs: _weekDaysTabs,
+            ),
           ),
-        ),
-        body: FutureBuilder<Map<String, List<TimetableEntry>>>(
-            future: _timetable,
-            builder: (futureContext, snapshot) {
-              if (snapshot.hasError) {
-                return Container(
-                  child: RichText(
-                    text: TextSpan(
-                      text: 'Wystąpił błąd podczas pobierania planu!',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                      children: [
-                        TextSpan(text: snapshot.connectionState.toString()),
-                        TextSpan(text: snapshot.error.toString()),
-                      ]
-                    )
-                  )
-                );
-              } else if (snapshot.hasData) {
-                if (snapshot.data.length == 0) {
+          body: FutureBuilder<Map<String, List<TimetableEntry>>>(
+              future: _timetable,
+              builder: (futureContext, snapshot) {
+                if (snapshot.hasError) {
+                  debugPrint('Error while fetching plan data');
+                  debugPrint(
+                      'ConnState: ${snapshot.connectionState.toString()}');
+                  debugPrint('Err: ${snapshot.error.toString()}');
+                  //_showErrorWhileFetching();
                   return _noData();
-                }
+                } else if (snapshot.hasData) {
+                  if (snapshot.data.length == 0) {
+                    return _noData();
+                  }
 
-                return TabBarView(
-                  children: _getTabViewChildren(snapshot.data),
-                );
-              }
-              // By default, show a loading spinner
-              return Center(child: CircularProgressIndicator());
-            }),
-        bottomNavigationBar: BottomNavigationBar(
-          items: <BottomNavigationBarItem>[
-            BottomNavigationBarItem(icon: Icon(Icons.calendar_today), title: Text(_getWeekText(-1))),
-            BottomNavigationBarItem(icon: Icon(Icons.today), title: Text(_getWeekText(0))),
-            BottomNavigationBarItem(icon: Icon(Icons.calendar_today), title: Text(_getWeekText(1))),
-          ],
-          currentIndex: _selectedWeek,
-          onTap: _changeWeek,
-        ),
-      )
-    );
+                  return TabBarView(
+                    children: _getTabViewChildren(snapshot.data),
+                  );
+                }
+                // By default, show a loading spinner
+                return Center(child: CircularProgressIndicator());
+              }),
+          bottomNavigationBar: BottomNavigationBar(
+            items: <BottomNavigationBarItem>[
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.calendar_today),
+                  title: Text(_getWeekText(-1))),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.today), title: Text(_getWeekText(0))),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.calendar_today),
+                  title: Text(_getWeekText(1))),
+            ],
+            currentIndex: _selectedWeek,
+            onTap: _changeWeek,
+          ),
+        ));
   }
 
   Widget _noData() {
@@ -175,11 +182,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Image.asset("assets/images/1337.png", width: 192.0, repeat: ImageRepeat.noRepeat, fit: BoxFit.contain),
+            Image.asset("assets/images/1337.png",
+                width: 192.0,
+                repeat: ImageRepeat.noRepeat,
+                fit: BoxFit.contain),
             Padding(
                 padding: EdgeInsets.only(top: 16.0),
-                child: Text('Brak zajęć?')
-            ),
+                child: Text('Brak zajęć?')),
           ],
         ),
       ),
@@ -196,10 +205,13 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
     ListTile _getHeader() {
       return ListTile(
-        title: Text('Objaśnienia piktogramów', style: Theme.of(context).textTheme.body2),
+        title: Text('Objaśnienia piktogramów',
+            style: Theme.of(context).textTheme.body2),
       );
     }
-    List<ListTile> helpData = ExerciseTypes.list.map((t) => _getListTile(t)).toList();
+
+    List<ListTile> helpData =
+        ExerciseTypes.list.map((t) => _getListTile(t)).toList();
     helpData.insert(0, _getHeader());
     return ListView(children: helpData);
   }
@@ -216,8 +228,40 @@ class _TimetableScreenState extends State<TimetableScreen> {
     var wkEnd = wkStart.add(Duration(days: 6));
     return '${_getPrettyPrintDayMonth(wkStart)} - ${_getPrettyPrintDayMonth(wkEnd)}';
   }
-  
+
   String _getPrettyPrintDayMonth(DateTime dt) {
     return '${getPaddedZero(dt.day)}.${getPaddedZero(dt.month)}';
+  }
+
+  void _showPictogramLegend(BuildContext context) {
+    showBottomSheet(context: context, builder: (context) => _iconsHelp());
+  }
+
+  List<PopupMenuItem<_TimetableDropdownMenu>> _makePopupMenuItems(BuildContext context) => [
+    PopupMenuItem(
+      child: Row(children: <Widget>[
+        Icon(Icons.favorite),
+        Text('Dodaj do moich grup')
+      ]),
+      value: _TimetableDropdownMenu.ADD_REMOVE_FROM_MY_GROUPS,
+    ),
+    PopupMenuItem(
+      child: Row(children: <Widget>[
+        Icon(Icons.help),
+        Text('Objaśnienia piktogramów')
+      ]),
+      value: _TimetableDropdownMenu.SHOW_PICTOGRAM_LEGEND,
+    )
+  ];
+}
+
+Map<String, List<TimetableEntry>> _parseTimetable(String data) {
+  try {
+    var json = jsonDecode(data);
+    return Timetable.fromJson(json).entries;
+  } on FormatException catch (ex) {
+    debugPrint(ex.toString());
+    //_showErrorWhileFetching();
+    return null;
   }
 }
