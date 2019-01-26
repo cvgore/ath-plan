@@ -23,6 +23,7 @@ class TimetableScreen extends StatefulWidget {
 enum _TimetableDropdownMenu {
   ADD_REMOVE_FROM_MY_GROUPS,
   SHOW_PICTOGRAM_LEGEND,
+  MANUAL_WEEK,
 }
 
 class _TimetableScreenState extends State<TimetableScreen> {
@@ -121,15 +122,22 @@ class _TimetableScreenState extends State<TimetableScreen> {
               },
             ),
             actions: <Widget>[
-              PopupMenuButton<_TimetableDropdownMenu>(
-                itemBuilder: _makePopupMenuItems,
-                onSelected: (item) {
-                  switch(item) {
-                    case _TimetableDropdownMenu.SHOW_PICTOGRAM_LEGEND:
-                      return _showPictogramLegend(context);
-                    case _TimetableDropdownMenu.ADD_REMOVE_FROM_MY_GROUPS:
-                      return null;
-                  }
+              Builder(
+                builder: (BuildContext context) {
+                  return PopupMenuButton<_TimetableDropdownMenu>(
+                    itemBuilder: _makePopupMenuItems,
+                    onSelected: (item) {
+                      switch(item) {
+                        case _TimetableDropdownMenu.SHOW_PICTOGRAM_LEGEND:
+                          showModalBottomSheet(context: context, builder: (context) => _iconsHelp());
+                          return null;
+                        case _TimetableDropdownMenu.MANUAL_WEEK:
+                          return null;
+                        case _TimetableDropdownMenu.ADD_REMOVE_FROM_MY_GROUPS:
+                          return null;
+                      }
+                    },
+                  );
                 },
               )
             ],
@@ -213,7 +221,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
     List<ListTile> helpData =
         ExerciseTypes.list.map((t) => _getListTile(t)).toList();
     helpData.insert(0, _getHeader());
-    return ListView(children: helpData);
+    return Scrollbar(child: ListView(children: helpData));
   }
 
   void _changeWeek(int value) {
@@ -233,26 +241,24 @@ class _TimetableScreenState extends State<TimetableScreen> {
     return '${getPaddedZero(dt.day)}.${getPaddedZero(dt.month)}';
   }
 
-  void _showPictogramLegend(BuildContext context) {
-    showBottomSheet(context: context, builder: (context) => _iconsHelp());
-  }
+  List<PopupMenuItem<_TimetableDropdownMenu>> _makePopupMenuItems(BuildContext context) {
+    makeItem(String title, IconData icon, _TimetableDropdownMenu option) => PopupMenuItem(
+      child: Row(children: <Widget>[
+        Icon(icon),
+        Padding(
+          child: Text(title),
+          padding: EdgeInsets.only(left: 4.0),
+        )
+      ]),
+      value: option,
+    );
 
-  List<PopupMenuItem<_TimetableDropdownMenu>> _makePopupMenuItems(BuildContext context) => [
-    PopupMenuItem(
-      child: Row(children: <Widget>[
-        Icon(Icons.favorite),
-        Text('Dodaj do moich grup')
-      ]),
-      value: _TimetableDropdownMenu.ADD_REMOVE_FROM_MY_GROUPS,
-    ),
-    PopupMenuItem(
-      child: Row(children: <Widget>[
-        Icon(Icons.help),
-        Text('Objaśnienia piktogramów')
-      ]),
-      value: _TimetableDropdownMenu.SHOW_PICTOGRAM_LEGEND,
-    )
-  ];
+    return [
+      makeItem('Dodaj do moich grup', Icons.favorite, _TimetableDropdownMenu.ADD_REMOVE_FROM_MY_GROUPS),
+      makeItem('Objaśnienia piktogramów', Icons.help, _TimetableDropdownMenu.SHOW_PICTOGRAM_LEGEND),
+      makeItem('Wybierz tydzień', Icons.view_week, _TimetableDropdownMenu.MANUAL_WEEK),
+    ];
+  }
 }
 
 Map<String, List<TimetableEntry>> _parseTimetable(String data) {
