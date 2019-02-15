@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:core';
 
 import '../../group.dart';
@@ -23,7 +24,8 @@ class TimetableScreen extends StatefulWidget {
 enum _TimetableDropdownMenu {
   ADD_REMOVE_FROM_MY_GROUPS,
   SHOW_PICTOGRAM_LEGEND,
-  MANUAL_WEEK,
+  CUSTOM_WEEK,
+  DOWNLOAD_TIMETABLE_FROM_SERVER,
 }
 
 class _TimetableScreenState extends State<TimetableScreen> {
@@ -39,15 +41,23 @@ class _TimetableScreenState extends State<TimetableScreen> {
   ];
 
   int _selectedWeek = 1;
+  bool _isCustomWeek = false;
+  int _customWeek = 0;
   Future<Map<String, List<TimetableEntry>>> _timetable;
   int _weekDayIdx;
   List<String> _dateKeys = List();
+  SharedPreferences _prefs = null;
 
   _TimetableScreenState(this.groupData) : super();
 
   @override
   void initState() {
     super.initState();
+    SharedPreferences.getInstance().then((prefs) {
+      setState(() {
+        _prefs = prefs;
+      });
+    });
     _timetable = _getTimetable();
   }
 
@@ -58,11 +68,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
       if (subData.length == 0) {
         temp.add(_noData());
       } else {
-        temp.add(ListView.builder(
+        temp.add(Scrollbar(child: ListView.builder(
             itemCount: subData.length,
             itemBuilder: (BuildContext itemContext, int idx) {
               return EntryTile(subData[idx]);
-            }));
+            })));
       }
     }
     return temp;
@@ -86,15 +96,34 @@ class _TimetableScreenState extends State<TimetableScreen> {
         barrierDismissible: false);
   }
 
-  Future<Map<String, List<TimetableEntry>>> _getTimetable() async {
-    var data =
-        await http.get('https://ath-plan.liquard.tk/?group=${groupData.id}');
-    if (data.statusCode != 200) {
-      //_showErrorWhileFetching();
+  Future<Map<String, List<TimetableEntry>>> _getTimetable({ forceRefresh: false }) async {
+    _tryGetIndexFromCache() async {
+      var file = await FileCache.getFile(FilePaths.timetableCache(this.groupData.id.toString()));
+      var data = await file.readAsString();
+      try {
+        var json = jsonDecode(data);
+        return data;
+      } catch(ex) {}
       return null;
     }
+    var data;
+    if (!forceRefresh) {
+      data = await _tryGetIndexFromCache();
+      if (data == null) {
+        return _getTimetable(forceRefresh: true);
+      }
+    } else {
+      data = await http.get('https://ath-plan.liquard.tk?group=${this.groupData.id}/');
+    }
+    if (data is http.Response) {
+      if (data.statusCode != 200) {
+        //_showErrorWhileFetching();
+        return null;
+      }
+      data = data.body;
+    }
 
-    return await compute(_parseTimetable, data.body);
+    return await compute(_parseTimetable, (data as String));
   }
 
   @override
@@ -131,9 +160,30 @@ class _TimetableScreenState extends State<TimetableScreen> {
                         case _TimetableDropdownMenu.SHOW_PICTOGRAM_LEGEND:
                           showModalBottomSheet(context: context, builder: (context) => _iconsHelp());
                           return null;
-                        case _TimetableDropdownMenu.MANUAL_WEEK:
+                        case _TimetableDropdownMenu.CUSTOM_WEEK:
+//                          TODO: showDialog(
+//                            context: context,
+//                            builder: (context) => AlertDialog(
+//                              title: Text('Wybierz tydzień'),
+//                              content: Center(
+//                                child: DropdownButton(
+//                                  items: _getAllAvailableWeeks(),
+//                                  onChanged: (value) {
+//                                    setState(() {
+//                                      _customWeek = value;
+//                                      _isCustomWeek = true;
+//                                    });
+//                                  }
+//                                ),
+//                              ),
+//                            )
+//                          );
+                          return null;
+                        case _TimetableDropdownMenu.DOWNLOAD_TIMETABLE_FROM_SERVER:
+                          _refetchTimetable();
                           return null;
                         case _TimetableDropdownMenu.ADD_REMOVE_FROM_MY_GROUPS:
+                          _addOrRemoveFromMyGroups();
                           return null;
                       }
                     },
@@ -155,7 +205,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
                   debugPrint('Err: ${snapshot.error.toString()}');
                   //_showErrorWhileFetching();
                   return _noData();
-                } else if (snapshot.hasData) {
+                } else if (snapshot.hasData && snapshot.connectionState == ConnectionState.done) {
                   if (snapshot.data.length == 0) {
                     return _noData();
                   }
@@ -190,10 +240,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            Image.asset("assets/images/1337.png",
-                width: 192.0,
-                repeat: ImageRepeat.noRepeat,
-                fit: BoxFit.contain),
+            _getImageNoTimetable(),
             Padding(
                 padding: EdgeInsets.only(top: 16.0),
                 child: Text('Brak zajęć?')),
@@ -226,6 +273,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
   void _changeWeek(int value) {
     setState(() {
+      if (_isCustomWeek) {
+        _isCustomWeek = false;
+      }
       _selectedWeek = value;
     });
   }
@@ -255,10 +305,57 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
     return [
       makeItem('Dodaj do moich grup', Icons.favorite, _TimetableDropdownMenu.ADD_REMOVE_FROM_MY_GROUPS),
-      makeItem('Objaśnienia piktogramów', Icons.help, _TimetableDropdownMenu.SHOW_PICTOGRAM_LEGEND),
-      makeItem('Wybierz tydzień', Icons.view_week, _TimetableDropdownMenu.MANUAL_WEEK),
+      makeItem('Objaśnienia piktogramów...', Icons.help, _TimetableDropdownMenu.SHOW_PICTOGRAM_LEGEND),
+      makeItem('Pobierz plan z serwera', Icons.cloud_download, _TimetableDropdownMenu.DOWNLOAD_TIMETABLE_FROM_SERVER),
+      // TODO: makeItem('Wybierz tydzień...', Icons.cloud_download, _TimetableDropdownMenu.CUSTOM_WEEK),
     ];
   }
+
+  _getImageNoTimetable() {
+    if (_prefs.getBool('is-surprise')) {
+      return Image.asset("assets/images/1337.png",
+        width: 169.0,
+        repeat: ImageRepeat.noRepeat,
+        fit: BoxFit.contain);
+    } else {
+      return Center(
+        child: Text('\u{1F914}',
+          style: TextStyle(
+            fontSize: 128.0
+          ),
+        )
+      );
+    }
+  }
+
+  _addOrRemoveFromMyGroups() async {
+    var file = await FileCache.getFile(FilePaths.OWN_GROUPS);
+    List<Group> groups;
+    try {
+      var tmp = jsonDecode(await file.readAsString());
+      groups = tmp.map((el) => Group.fromJson(el)).toList();
+    } catch(ex) {
+      groups = List();
+    }
+
+    if (groups.indexOf(this.groupData) > -1) {
+      // do nothing
+    } else {
+      groups.add(this.groupData);
+      file.writeAsString(jsonEncode(groups));
+    }
+  }
+
+  _refetchTimetable() {
+    setState(() {
+      _timetable = _getTimetable(forceRefresh: true);
+    });
+  }
+
+// TODO:  _getAllAvailableWeeks() {
+//    return _.map((v) => DropdownMenuItem(child: Text(v))).toList();
+//  }
+
 }
 
 Map<String, List<TimetableEntry>> _parseTimetable(String data) {

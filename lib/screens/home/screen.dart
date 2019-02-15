@@ -3,36 +3,37 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'groups_screen.dart';
-import 'info_screen.dart';
+// TODO: import 'info_screen.dart';
 import 'my_groups_screen.dart';
 import '../../fcm.dart';
 import '../../common.dart';
+import '../settings/screen.dart';
+
+String _fcmToken = "";
+bool _consentAgreed = false;
 
 bool get consentAgreed {
-  return HomeScreen._consentAgreed;
+  return _consentAgreed;
 }
 
 String get fcmToken {
-  return HomeScreen._fcmToken ?? "";
+  return _fcmToken ?? "";
 }
 
 const String GDPR_CONSENT_PREFS_KEY = 'gdpr_consent';
 
 class HomeScreen extends StatefulWidget {
-  static bool _consentAgreed = false;
-  static String _fcmToken;
-
   @override
   _HomeScreenState createState() => _HomeScreenState();
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  int _screenIndex = 0;
+  int _screenIndex = 1;
 
   final List<Widget> _cacheOfSubScreens = <Widget>[
     GroupsSubScreen(),
     MyGroupsSubScreen(),
-    InfoSubScreen()
+    // TODO: InfoSubScreen()
   ];
 
   _openRepo() async {
@@ -48,7 +49,6 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     tryGetFcmToken();
-
   }
 
   @override
@@ -57,21 +57,62 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         title: Text('ATH Plan'),
         actions: <Widget>[
-          IconButton(
-            icon: Icon(Icons.info),
-            onPressed: () {
-              showAboutDialog(
-                context: context,
-                applicationVersion: '0.1.0',
-                applicationName: 'ATH Plan',
-                children: <Widget>[
-                  Text('\u00A9 2018 cvgore'),
-                  Text('Licensed under GPLv3.0'),
-                  FlatButton(
-                    child: Text('https://github.com/cvgore/ath-plan'),
-                    onPressed: _openRepo,
-                  )
-                ]
+          Builder(
+            builder: (context) {
+              return PopupMenuButton<_ActionPopupButton>(
+                itemBuilder: (context) {
+                  makeItem(String title, IconData icon, _ActionPopupButton option) => PopupMenuItem(
+                    child: Row(children: <Widget>[
+                      Icon(icon),
+                      Padding(
+                        child: Text(title),
+                        padding: EdgeInsets.only(left: 4.0),
+                      )
+                    ]),
+                    value: option,
+                  );
+                  return <PopupMenuItem<_ActionPopupButton>>[
+                    makeItem('O aplikacji', Icons.info, _ActionPopupButton.SHOW_ABOUT_BOX),
+                    makeItem('Wyczyść cache', Icons.delete_sweep, _ActionPopupButton.DROP_WHOLE_CACHE),
+                    makeItem('Ustawienia', Icons.settings, _ActionPopupButton.SHOW_SETTINGS),
+                  ];
+                },
+                child: Icon(Icons.more_vert),
+                onSelected: (value) {
+                  switch(value) {
+                    case _ActionPopupButton.DROP_WHOLE_CACHE:
+                      FileCache.dropCache();
+                      Scaffold.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Pamięć podręczna została wyczyszczona')
+                        )
+                      );
+                      return null;
+                    case _ActionPopupButton.SHOW_ABOUT_BOX:
+                      showAboutDialog(
+                        context: context,
+                        applicationVersion: '0.2.0',
+                        applicationName: 'ATH Plan',
+                        children: <Widget>[
+                          Text('\u00A9 2018 cvgore'),
+                          Text('Licensed under GPLv3.0'),
+                          FlatButton(
+                            child: Text('https://github.com/cvgore/ath-plan'),
+                            onPressed: _openRepo,
+                          )
+                        ]
+                      );
+                      return null;
+                    case _ActionPopupButton.SHOW_SETTINGS:
+                      setState(() {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => SettingsScreen()
+                          ));
+                      });
+                      return null;
+                  }
+                },
               );
             },
           )
@@ -82,7 +123,7 @@ class _HomeScreenState extends State<HomeScreen> {
         items: <BottomNavigationBarItem>[
           BottomNavigationBarItem(icon: Icon(Icons.group), title: Text('Grupy')),
           BottomNavigationBarItem(icon: Icon(Icons.person), title: Text('Moje grupy')),
-          BottomNavigationBarItem(icon: Icon(Icons.list), title: Text('Informacje')),
+          // TODO: BottomNavigationBarItem(icon: Icon(Icons.list), title: Text('Informacje')),
         ],
         currentIndex: _screenIndex,
         onTap: (int index) {
@@ -99,7 +140,7 @@ class _HomeScreenState extends State<HomeScreen> {
     var consent = prefs.getBool(GDPR_CONSENT_PREFS_KEY);
     if (consent == null) {
       debugPrint('Consent agreement required to FCM work, nor no notifications!');
-      HomeScreen._consentAgreed = await showDialog<bool>(
+      _consentAgreed = await showDialog<bool>(
         context: context,
         barrierDismissible: false,
         builder: (context) {
@@ -110,8 +151,8 @@ class _HomeScreenState extends State<HomeScreen> {
                     text: 'Zgodnie z RODO musisz zostać poinformowany o przetwarzaniu danych.',
                     children: <TextSpan>[
                       TextSpan(text: 'Abyś mógł otrzymywać powiadomienia na swoje urządzenie, '
-                          'musisz wyrazić zgodę na przetwarzanie danych osobowych (co za kuriozum).'),
-                      TextSpan(text: 'W celu dostarczenia powiadomienia zostaje użyty twój identyfikator instancji aplikacji.'),
+                          'musisz wyrazić zgodę na przetwarzanie danych osobowych.'),
+                      TextSpan(text: 'W celu dostarczenia powiadomienia zostaje użyty twój unikalny identyfikator instancji aplikacji.'),
                       TextSpan(text: 'Swoją zgodę możesz zawsze cofnąć w Ustawieniach.'),
                     ]
                 )
@@ -131,7 +172,7 @@ class _HomeScreenState extends State<HomeScreen> {
       );
       prefs.setBool(GDPR_CONSENT_PREFS_KEY, consentAgreed);
     } else {
-      HomeScreen._consentAgreed = consent;
+      _consentAgreed = consent;
     }
     if (consentAgreed) {
       handleNotifications();
@@ -140,7 +181,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> handleNotifications() async {
     g_firebaseMessaging.onTokenRefresh.listen((token) {
-      HomeScreen._fcmToken = token;
+      _fcmToken = token;
       debugPrint('FCM token: $fcmToken');
     });
     g_firebaseMessaging.setAutoInitEnabled(true);
@@ -181,4 +222,10 @@ class _HomeScreenState extends State<HomeScreen> {
       }
     );
   }
+}
+
+enum _ActionPopupButton {
+  SHOW_ABOUT_BOX,
+  SHOW_SETTINGS,
+  DROP_WHOLE_CACHE
 }

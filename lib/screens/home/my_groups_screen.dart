@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../timetable/screen.dart';
 import '../../group.dart';
+import '../../common.dart';
 
 class MyGroupsSubScreen extends StatefulWidget {
   MyGroupsSubScreen({Key key}): super(key: key);
@@ -10,81 +13,128 @@ class MyGroupsSubScreen extends StatefulWidget {
 }
 
 class _MyGroupsSubScreenState extends State<MyGroupsSubScreen> {
-  Future<List<Group>> _bookmarksFuture;
-  List<Group> _bookmarks = List();
+  Future<List<Group>> _groupsFuture;
+  List<Group> _groups = List();
 
   @override
   void initState() {
     super.initState();
-    _bookmarksFuture = _getBookmarks();
+    _groupsFuture = _getGroups();
   }
 
-  Future<List<Group>> _getBookmarks() async {
-    final prefs = await SharedPreferences.getInstance();
-    List<String> data = prefs.getStringList('bookmarks');
-    _bookmarks = List();
-//    if (data.length > 0) {
-//      for (String fav in data) {
-//        int grpId = int.parse(fav);
-//        int grpPos = _groups.indexWhere((g) => g.id == grpId);
-//        if (grpPos == -1) {
-//          debugPrint('Group not found: $grpId');
-//          continue;
-//        }
-//
-//        _bookmarks.add(_groups[grpPos]);
-//      }
-//    }
-    return _bookmarks;
+  Future<List<Group>> _getGroups() async {
+    _groups = List();
+    var file = await FileCache.getFile(FilePaths.OWN_GROUPS);
+    try {
+      var groups = jsonDecode(await file.readAsString());
+      if (groups is Iterable) {
+        _groups = groups.map((el) => Group.fromJson(el)).toList();
+      }
+    } on FormatException {
+      Scaffold.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Wystąpił błąd, twoje grupy nie mogą zostać wyświetlone'),
+        )
+      );
+    }
+    return _groups;
   }
 
-  ListTile _getBookmarksTile(Group data, int index) {
+  ListTile _getGroupTile(Group data, int index) {
     return ListTile(
         leading: Icon(Icons.bookmark),
         title: Text(data.name),
         onTap: () {
           setState(() {
-            Navigator.of(context).pop();
             Navigator.of(context).push(MaterialPageRoute(
                 builder: (context) => TimetableScreen(groupData: data)));
           });
         },
         onLongPress: () {
-          _bookmarks.removeAt(index);
-          _saveBookmarks();
+          showDialog(
+            context: context,
+            builder: (context) =>
+              AlertDialog(
+                title: Text('Usuń grupę'),
+                content: Text("Czy na pewno chcesz usunąć grupę '${data.name}' ze swoich grup?"),
+                actions: <Widget>[
+                  FlatButton(
+                    child: Text('Usuń'),
+                    onPressed: () {
+                      _groups.removeAt(index);
+                      _saveGroups();
+                      setState(() {
+                        Navigator.of(context).pop();
+                      });
+                    },
+                  ),
+                  FlatButton(
+                    child: Text('Anuluj'),
+                    onPressed: () {
+                      setState(() {
+                        Navigator.of(context).pop();
+                      });
+                    },
+                  )
+                ],
+              )
+          );
         });
   }
 
-  Future<void> _saveBookmarks() async {
-    final prefs = await SharedPreferences.getInstance();
-    prefs.setStringList(
-        'bookmarks', _bookmarks.map((g) => g.id.toString()).toList());
+  Future<void> _saveGroups() async {
+    var file = await FileCache.getFile(FilePaths.OWN_GROUPS);
+    await file.writeAsString(jsonEncode(_groups));
     setState(() {
-      _bookmarksFuture = _getBookmarks();
+      _groupsFuture = _getGroups();
     });
   }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<Group>>(
-      future: _bookmarksFuture,
+      future: _groupsFuture,
       builder: (context, snapshot) {
-        if (snapshot.hasData || snapshot.hasError) {
-          List<Group> data = List.from(snapshot.data);
-          return Container(
-            child: ListView.builder(
-              itemExtent: null,
-              itemBuilder: (BuildContext _, int index) {
-                return ListTile(
-                  leading: Icon(Icons.group),
-                  title: Text(data[index].name),
-                  onTap: () {
-                    Navigator.of(context).push(MaterialPageRoute(builder: (BuildContext _) => TimetableScreen(groupData: data[index])));
-                  },
-                );
+        if (snapshot.hasData) {
+          if (snapshot.data.length < 1) {
+            return RefreshIndicator(
+              child: Center(
+                child: Text('Brak twoich grup'),
+              ),
+              onRefresh: () async {
+                setState(() {
+                  _groupsFuture = _getGroups();
+                });
               },
-              itemCount: data.length,
+            );
+          }
+          List<Group> data = List.from(snapshot.data);
+          return RefreshIndicator(
+            child: Container(
+              child: ListView.builder(
+                itemExtent: null,
+                itemBuilder: (BuildContext _, int index) {
+                  return _getGroupTile(data[index], index);
+                },
+                itemCount: data.length,
+              ),
             ),
+            onRefresh: () async {
+              setState(() {
+                _groupsFuture = _getGroups();
+              });
+            },
+          );
+        } else if (snapshot.hasError) {
+          return RefreshIndicator(
+            child: Center(
+            child: Text('Twoje grupy są niedostępne')
+            ),
+            onRefresh: () async {
+              setState(() {
+                _groupsFuture = _getGroups();
+              });
+            },
           );
         }
         // By default, show a loading spinner
