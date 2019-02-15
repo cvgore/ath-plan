@@ -10,6 +10,8 @@ Heavily relies on [ats4-to-json](https://github.com/cvgore/ats4-to-json).
 
 App is freely available for Android.
 
+You can download it by clicking [here](https://github.com/cvgore/ath-plan/releases) or by clicking on "releases" link on top bar.
+
 ## iOS
 
 There are no current plans for iOS release.
