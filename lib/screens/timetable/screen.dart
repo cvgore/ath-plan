@@ -312,7 +312,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   _getImageNoTimetable() {
-    if (_prefs.getBool('is-surprise')) {
+    if (_prefs != null && _prefs.getBool('is-surprise') == true) {
       return Image.asset("assets/images/1337.png",
         width: 169.0,
         repeat: ImageRepeat.noRepeat,
