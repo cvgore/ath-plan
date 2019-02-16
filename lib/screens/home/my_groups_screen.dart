@@ -31,11 +31,11 @@ class _MyGroupsSubScreenState extends State<MyGroupsSubScreen> {
         _groups = groups.map((el) => Group.fromJson(el)).toList();
       }
     } on FormatException {
-//      Scaffold.of(context).showSnackBar(
-//        SnackBar(
-//          content: Text('Wystąpił błąd, twoje grupy nie mogą zostać wyświetlone'),
-//        )
-//      );
+      Scaffold.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Wystąpił błąd, twoje grupy nie mogą zostać wyświetlone'),
+        )
+      );
     }
     return _groups;
   }

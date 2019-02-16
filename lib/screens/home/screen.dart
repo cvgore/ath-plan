@@ -30,7 +30,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _screenIndex = 1;
 
-  final List<Widget> _cacheOfSubScreens = <Widget>[
+  List<Widget> _cacheOfSubScreens = <Widget>[
     GroupsSubScreen(),
     MyGroupsSubScreen(),
     // TODO: InfoSubScreen()
@@ -77,7 +77,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     makeItem('Ustawienia', Icons.settings, _ActionPopupButton.SHOW_SETTINGS),
                   ];
                 },
-                child: Icon(Icons.more_vert),
                 onSelected: (value) {
                   switch(value) {
                     case _ActionPopupButton.DROP_WHOLE_CACHE:
@@ -193,8 +192,15 @@ class _HomeScreenState extends State<HomeScreen> {
         }
         else if (fcmMsg.containsKey('data')) {
           Map<String, dynamic> data = fcmMsg['data'];
-          if (data.containsKey('updateIndexes')) {
-            //updateIndexes();
+          if (data.containsKey('fullRefresh')) {
+            FileCache.dropCache();
+            setState(() {
+              _cacheOfSubScreens = [
+                GroupsSubScreen(),
+                MyGroupsSubScreen(),
+                // InfoSubScreen()
+              ];
+            });
           }
         }
       }, onLaunch: (fcmMsg) {}, onResume: (fcmMsg) {}
@@ -202,9 +208,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _showNotificationDlg(Map<String, dynamic> data) {
-    Scaffold.of(context).showSnackBar(
-      SnackBar(content: Text(data['body']))
-    );
     showDialog(
       context: context,
       barrierDismissible: false,

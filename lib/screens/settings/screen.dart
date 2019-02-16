@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../fcm.dart';
@@ -14,6 +15,7 @@ class SettingsScreen extends StatefulWidget {
 enum _SettingValueMap {
   TYPE,
   VALUE,
+  ON_CHANGE
 }
 
 enum _SettingValueType {
@@ -25,7 +27,23 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Map<String, Map<_SettingValueMap, dynamic>> _settings = {
     GDPR_CONSENT_PREFS_KEY: {
       _SettingValueMap.TYPE: _SettingValueType.BOOL,
-      _SettingValueMap.VALUE: false
+      _SettingValueMap.VALUE: false,
+      _SettingValueMap.ON_CHANGE: (BuildContext context, bool value) {
+        g_firebaseMessaging.setAutoInitEnabled(value);
+        if (value) {
+          g_firebaseMessaging.deleteInstanceID();
+        }
+        Scaffold.of(context)
+          ..hideCurrentSnackBar()
+          ..showSnackBar(
+          SnackBar(
+            content: Text('Zmiana ustawień RODO wymaga restartu apl.'),
+            action: SnackBarAction(label: 'Restart', onPressed: () {
+              SystemChannels.platform.invokeMethod('SystemNavigator.pop');
+            }),
+          )
+        );
+      }
     },
     'is-surprise': {
       _SettingValueMap.TYPE: _SettingValueType.BOOL,
@@ -37,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     'is-surprise': '( ͡° ͜ʖ ͡°)'
   };
 
-  SharedPreferences _prefs = null;
+  SharedPreferences _prefs;
 
   @override
   void initState() {
@@ -61,32 +79,39 @@ class _SettingsScreenState extends State<SettingsScreen> {
       appBar: AppBar(
         title: Text('Ustawienia'),
       ),
-      body: ListView.builder(
-        itemCount: settingsKeyList.length,
-        itemBuilder: (context, idx) {
-          var key = settingsKeyList[idx];
-          var setting = _settings[key];
-          var settingType = setting[_SettingValueMap.TYPE];
-          var settingValue = setting[_SettingValueMap.VALUE];
-          Widget getChooseWidget() {
-            switch(settingType) {
-              case _SettingValueType.BOOL:
-                return CheckboxListTile(
-                  title: Text(_settingsTitle[key]),
-                  value: settingValue,
-                  onChanged: (value) {
-                    setState(() {
-                      _settings[key][_SettingValueMap.VALUE] = value;
-                      _saveSettings(key, settingType, value);
-                    });
-                  },
-                );
+      body: Builder(
+        builder: (mainContext) {
+          return ListView.builder(
+            itemCount: settingsKeyList.length,
+            itemBuilder: (context, idx) {
+              var key = settingsKeyList[idx];
+              var setting = _settings[key];
+              var settingType = setting[_SettingValueMap.TYPE];
+              var settingValue = setting[_SettingValueMap.VALUE];
+              Widget getChooseWidget() {
+                switch(settingType) {
+                  case _SettingValueType.BOOL:
+                    return CheckboxListTile(
+                      title: Text(_settingsTitle[key]),
+                      value: settingValue,
+                      onChanged: (value) {
+                        setState(() {
+                          _settings[key][_SettingValueMap.VALUE] = value;
+                          _saveSettings(key, settingType, value);
+                          if (setting.containsKey(_SettingValueMap.ON_CHANGE)) {
+                            setting[_SettingValueMap.ON_CHANGE](mainContext, value);
+                          }
+                        });
+                      },
+                    );
+                }
+                return null;
+              }
+              return getChooseWidget();
             }
-            return null;
-          }
-          return getChooseWidget();
-        }
-      ),
+          );
+        },
+      )
     );
   }
 

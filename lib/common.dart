@@ -4,7 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'screens/home/screen.dart' show consentAgreed;
 
-SharedPreferences _prefs = null;
+SharedPreferences _prefs;
 
 Directory _appDir;
 Directory _cacheDir;
@@ -50,7 +50,10 @@ Future<File> getFileFromCache(String fileName) async {
   }
   if (! await _cacheDir.exists()) {
     await _cacheDir.create();
-    await Directory("${_appDir.path}/cache/timetables").create();
+  }
+  var _timetablesDir = Directory("${_appDir.path}/cache/timetables");
+  if (! await _timetablesDir.exists()) {
+    await _timetablesDir.create();
   }
   var file = File("${_appDir.path}/$fileName");
   if (! await file.exists()) {
@@ -61,8 +64,8 @@ Future<File> getFileFromCache(String fileName) async {
 
 class FilePaths {
   static const String GROUPS_CACHE = "cache/groups.json";
-  static String timetableCache(String timetableId) {
-    return "cache/timetables/$timetableId.json";
+  static String timetableCache(int timetableId) {
+    return "cache/timetables/plan-$timetableId.json";
   }
   static const String OWN_GROUPS = "my_groups.json";
   static const String INDEX_CACHE = "cache/index.json";

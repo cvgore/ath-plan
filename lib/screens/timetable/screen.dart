@@ -42,11 +42,11 @@ class _TimetableScreenState extends State<TimetableScreen> {
 
   int _selectedWeek = 1;
   bool _isCustomWeek = false;
-  int _customWeek = 0;
+  // int _customWeek = 0;
   Future<Map<String, List<TimetableEntry>>> _timetable;
   int _weekDayIdx;
   List<String> _dateKeys = List();
-  SharedPreferences _prefs = null;
+  SharedPreferences _prefs;
 
   _TimetableScreenState(this.groupData) : super();
 
@@ -97,8 +97,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
   }
 
   Future<Map<String, List<TimetableEntry>>> _getTimetable({ forceRefresh: false }) async {
-    _tryGetIndexFromCache() async {
-      var file = await FileCache.getFile(FilePaths.timetableCache(this.groupData.id.toString()));
+    _tryGetTimetableFromCache() async {
+      var file = await FileCache.getFile(FilePaths.timetableCache(this.groupData.id));
       var data = await file.readAsString();
       try {
         var json = jsonDecode(data);
@@ -108,8 +108,9 @@ class _TimetableScreenState extends State<TimetableScreen> {
     }
     var data;
     if (!forceRefresh) {
-      data = await _tryGetIndexFromCache();
+      data = await _tryGetTimetableFromCache();
       if (data == null) {
+        debugPrint('Failed to fetch timetable from cache');
         return _getTimetable(forceRefresh: true);
       }
     } else {
@@ -121,6 +122,8 @@ class _TimetableScreenState extends State<TimetableScreen> {
         return null;
       }
       data = data.body;
+      var file = await FileCache.getFile(FilePaths.timetableCache(this.groupData.id));
+      await file.writeAsString(data);
     }
 
     return await compute(_parseTimetable, (data as String));

@@ -25,7 +25,7 @@ class _GroupsSubScreenState extends State<GroupsSubScreen> {
       var file = await FileCache.getFile(FilePaths.INDEX_CACHE);
       var data = await file.readAsString();
       try {
-        var json = jsonDecode(data);
+        jsonDecode(data);
         return data;
       } catch(ex) {}
       return null;
