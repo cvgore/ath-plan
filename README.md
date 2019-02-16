@@ -30,11 +30,3 @@ Jeżeli znalazłeś jakiś błąd w działaniu aplikacji, proszę udaj się do z
 # Licencja
 
 _ATH Plan_ jest dostępny na licencji GPLv3.0
-
----
-
-# ATH Plan (EN)
-Mobile app for ATHs' students, where they can view current timetable.
-
-# License
-Licensed under GPLv3.0
