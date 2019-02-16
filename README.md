@@ -6,6 +6,8 @@ Dane pozyskiwane są z oficjalnej strony https://plany.ath.bielsko.pl.
 
 **Aplikacja jest na wczesnym etapie rozwoju, ~~mogą wystąpić~~ występują błędy**
 
+_Aktualnie dostępne są plany zajęć z wybranych kierunków, nowe kierunki zostaną dodane wkrótce_
+
 ## Android
 
 Aplikacja jest dostępna na Androida.
