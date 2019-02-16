@@ -1,23 +1,38 @@
-# ATH Plan
+# ATH Plan 
 
-Mobile app for ATHs' students, where they can view current timetable.
+Mobilna aplikacja dla studentów ATH, gdzie mogą zobaczyć aktualny plan zajęć
 
-It uses data from available at https://plany.ath.bielsko.pl indirecly.
+Dane pozyskiwane są z oficjalnej strony https://plany.ath.bielsko.pl.
 
-Heavily relies on [ats4-to-json](https://github.com/cvgore/ats4-to-json).
-
-**Please note, that this app is in early state of development. Expect bugs, crashes, nuclear wars or even worse**
+**Aplikacja jest na wczesnym etapie rozwoju, ~~mogą wystąpić~~ występują błędy**
 
 ## Android
 
-App is freely available for Android.
+Aplikacja jest dostępna na Androida.
 
-You can download it by clicking [here](https://github.com/cvgore/ath-plan/releases) or by clicking on "releases" link on top bar.
+Można ją pobrać [tutaj](https://github.com/cvgore/ath-plan/releases) lub klikając link "releases" na górnym pasku.
 
 ## iOS
 
-There are no current plans for iOS release.
+Na ten moment wersja na iOS jest nie dostępna.
+
+## Błędy
+### Błędy dotyczące planów
+
+Jeżeli twój plan wyświetla się niepoprawnie, jest niekompletny - zgłoś błąd [tutaj](https://github.com/cvgore/ath-plan/issues/4)
+
+### Błędy w działaniu aplikacji
+
+Jeżeli znalazłeś jakiś błąd w działaniu aplikacji, proszę udaj się do zakładki [Issues](https://github.com/cvgore/ath-plan/issues) i - jeśli podobny błąd nie został już zgłoszony - utwórz zgłoszenie. Pamiętaj, żeby podać jak najwięcej przydatnych informacji na temat zdarzenia.
+
+# Licencja
+
+_ATH-Plan_ jest dostępny na licencji GPLv3.0
+
+---
+
+# ATH Plan (EN)
+Mobile app for ATHs' students, where they can view current timetable.
 
 # License
-
 Licensed under GPLv3.0
