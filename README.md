@@ -23,7 +23,7 @@ Jeżeli twój plan wyświetla się niepoprawnie, jest niekompletny - zgłoś bł
 
 ### Błędy w działaniu aplikacji
 
-Jeżeli znalazłeś jakiś błąd w działaniu aplikacji, proszę udaj się do zakładki [Issues](https://github.com/cvgore/ath-plan/issues) i - jeśli podobny błąd nie został już zgłoszony - utwórz zgłoszenie. Pamiętaj, żeby podać jak najwięcej przydatnych informacji na temat zdarzenia.
+Jeżeli znalazłeś jakiś błąd w działaniu aplikacji, proszę udaj się do zakładki [Issues](https://github.com/cvgore/ath-plan/issues) i - jeśli podobny błąd nie został już zgłoszony - utwórz zgłoszenie. Pamiętaj, żeby podać jak najwięcej przydatnych informacji na temat zdarzenia. Możesz też wysłać maila na ten adres [cvgore@pm.me](mailto:cvgore@pm.me?subject=ATHPlan%20-%20Błąd%20aplikacji&body=Wersja:%0AProblem:%0AOpis%20b%C5%82%C4%99du:%0A)
 
 # Licencja
 
