@@ -90,10 +90,10 @@ class _HomeScreenState extends State<HomeScreen> {
                     case _ActionPopupButton.SHOW_ABOUT_BOX:
                       showAboutDialog(
                         context: context,
-                        applicationVersion: '0.2.0',
+                        applicationVersion: '0.2.2',
                         applicationName: 'ATH Plan',
                         children: <Widget>[
-                          Text('\u00A9 2018 cvgore'),
+                          Text('\u00A9 2019 cvgore'),
                           Text('Licensed under GPLv3.0'),
                           FlatButton(
                             child: Text('https://github.com/cvgore/ath-plan'),
