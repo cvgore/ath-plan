@@ -19,7 +19,7 @@ Na ten moment wersja na iOS jest nie dostępna.
 ## Błędy
 ### Błędy dotyczące planów
 
-Jeżeli twój plan wyświetla się niepoprawnie, jest niekompletny - zgłoś błąd [tutaj](https://github.com/cvgore/ath-plan/issues/4)
+Jeżeli twój plan wyświetla się niepoprawnie, jest niekompletny - zgłoś błąd [tutaj](https://github.com/cvgore/ath-plan/issues/4) lub wyślij maila na ten adres [cvgore@pm.me](mailto:cvgore@pm.me?subject=ATHPlan%20-%20Błąd%20dotyczący%20planu&body=Plan:%0ATyp%20b%C5%82%C4%99du:%20plan%20niekompletny/plan%20niepoprawnie%20si%C4%99%20wy%C5%9Bwietla/brak%20planu%0AOpis%20b%C5%82%C4%99du:%0A)
 
 ### Błędy w działaniu aplikacji
 
@@ -27,7 +27,7 @@ Jeżeli znalazłeś jakiś błąd w działaniu aplikacji, proszę udaj się do z
 
 # Licencja
 
-_ATH-Plan_ jest dostępny na licencji GPLv3.0
+_ATH Plan_ jest dostępny na licencji GPLv3.0
 
 ---
 
