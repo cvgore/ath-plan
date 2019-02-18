@@ -96,7 +96,10 @@ class _TimetableScreenState extends State<TimetableScreen> {
         barrierDismissible: false);
   }
 
-  Future<Map<String, List<TimetableEntry>>> _getTimetable({ forceRefresh: false }) async {
+  Future<Map<String, List<TimetableEntry>>> _getTimetable({ forceRefresh: false, fake: false }) async {
+    if (fake == true) {
+      return _timetable;
+    }
     _tryGetTimetableFromCache() async {
       var file = await FileCache.getFile(FilePaths.timetableCache(this.groupData.id));
       var data = await file.readAsString();
@@ -280,6 +283,7 @@ class _TimetableScreenState extends State<TimetableScreen> {
         _isCustomWeek = false;
       }
       _selectedWeek = value;
+      _timetable = _getTimetable(fake: true);
     });
   }
 
